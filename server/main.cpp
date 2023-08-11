@@ -4,14 +4,30 @@
 #include <cstring>
 #include <thread>
 #include <string>
-#include <unordered_map>
+#include <map>
 #include <mutex>
 #include <ctime>
-
+#include "commands.h"
 
 #include <WinSock2.h>
 #pragma comment(lib, "ws2_32.lib") // Link the Winsock library
 #include <windows.h>
+
+enum MoveState
+{
+    MOVE,
+    WAIT
+};
+
+enum GameStatus
+{
+    PENDING,
+    STARTED,
+    PROCESSING,
+    CLIENT_1_MOVE,
+    CLIENT_2_MOVE,
+    OVER
+};
 
 enum ClientStatus
 {
@@ -31,24 +47,46 @@ class Connection
     };
     Connection(SOCKET socket, std::string ip):sock{socket}, ip{ip}{};
     int status = ClientStatus::WAITING;
+    char connectionBuffer[1024];
+    char gameBuffer[100];
     SOCKET sock;
     std::string ip;
+    
     bool setStatus(int status)
     {
         this->status = status;
         return true;
     };
+
+    bool isInGame(){
+        return this->status == ClientStatus::GAME;
+    }
+
+    void clearBuffer()
+    {
+        memset(this->connectionBuffer, 0, sizeof(this->connectionBuffer));
+    }
+
+    void clearGameBuffer()
+    {
+        memset(this->gameBuffer, 0, sizeof(this->gameBuffer));
+    }
 };
 
 class Session{
     public:
+    
+    std::map<std::string, std::string> gameMap;
+        
     Session(int id, bool isFree)
     {
         this->id = id;
         this->isFree = isFree;
+        gameMap.insert(GAME_MAP.begin(), GAME_MAP.end());
     };
     bool isFree;
     int id;
+    int gameStatus = GameStatus::PENDING;
     Connection* first;
     Connection* second;
 
@@ -66,7 +104,8 @@ class Session{
         } 
         else
         {
-            this->isFree = false; 
+            this->isFree = false;
+            this->gameStatus = GameStatus::STARTED; 
         }
     }
 
@@ -81,6 +120,7 @@ void createGameSession(SOCKET sock1, SOCKET sock2);
 void sessionJoiner(std::vector<Connection> &connections, std::vector<Session> &sessions);
 Session* getOrCreateSession(std::vector<Session> &sessions);
 void joinUser(std::vector<Connection> *connections, Session *session);
+void gameHandler(std::vector<Session>& sessions);
 
 
 
@@ -129,6 +169,7 @@ int  main()
     //int counter = 0;
 
     std::thread sessionCreator(sessionJoiner, std::ref(connections), std::ref(sessions));
+    std::thread sessionHandler(gameHandler, std::ref(sessions));
     while(true)
     {
         //clientSockets.push_back(accept(listenSocket, (SOCKADDR*)&addr, &sizeofaddr));
@@ -172,6 +213,7 @@ void handleClient(Connection* connection){
 
         char sendMsg[512] = "Waiting for another user (server message)";
         char recvBuff[1024];
+        
         std::cout << "From client thread: in session, waiting for another player. Status: " << connection->status << std::endl;
         while(connection->status == ClientStatus::MATCHED || checkConnectionStatus(connection)) // TODO check connection status
         {
@@ -183,21 +225,39 @@ void handleClient(Connection* connection){
             Sleep(500);
         }
         // disconnected obrabotka
+
         while(connection->status == ClientStatus::GAME)
         {
-            memset(recvBuff, 0, sizeof(recvBuff));
-            std::cout << "INGAME" << std::endl;
-            char sendMsgGame[512] = "GAME STARTED (server message)";
-            send(connection->sock, sendMsgGame, sizeof(sendMsgGame), 0);
-            recv(connection->sock, recvBuff, sizeof(recvBuff), 0);
-            std::cout << "message from client IN GAME: " << recvBuff << std::endl;
-            Sleep(1000);
+            if(connection->gameBuffer != "/0")
+            {
+                if(connection->gameBuffer == "move")
+                {
+                    send(connection->sock, connection->gameBuffer, sizeof(connection->gameBuffer), 0);
+                    connection->clearGameBuffer();
+                    recv(connection->sock, connection->connectionBuffer, sizeof(connection->connectionBuffer), 0);
+
+                }
+                else if(connection->gameBuffer == "wait")
+                {
+                    send(connection->sock, connection->gameBuffer, sizeof(connection->gameBuffer), 0);
+                    connection->clearGameBuffer();
+                    
+                }
+            }
+            Sleep(500);     
                 
-        }
+        };
         Sleep(1000);
     }
 };
 
+std::string validateMove(char* move, std::map<std::string, std::string>* commands)
+{
+    if(commands->find(move) != commands->end())
+    {
+        //if()
+    }
+}
 
 Session* getOrCreateSession(std::vector<Session> &sessions)
 {
@@ -247,6 +307,7 @@ void sessionStarter(Session* session)
     }
 }
 
+
 void sessionJoiner(std::vector<Connection> &connections, std::vector<Session> &sessions)
 {
     while(true)
@@ -259,5 +320,55 @@ void sessionJoiner(std::vector<Connection> &connections, std::vector<Session> &s
 }
 
 
+int handleClientInput(Connection* first, Connection* second, int status) // possible pointer refactor
+{
+    if(status == GameStatus::CLIENT_1_MOVE)
+    {
 
+        strcpy(first->gameBuffer, "move");
+        strcpy(second->gameBuffer, "wait");
 
+        
+        return GameStatus::CLIENT_2_MOVE;
+        
+
+        // send(2, zhdat);
+        // send (1, hod);
+        // recv(1, hod);
+        // check, MAP -> zapisat'
+        // status == client 2 move
+    }
+    else if (status == GameStatus::CLIENT_2_MOVE)
+    {
+        strcpy(second->gameBuffer, "move");
+        strcpy(first->gameBuffer, "wait");
+        return 2;   
+    }
+
+    else
+    {
+        std::cout << "something went wrong" << std::endl;
+        return 3;
+    }  
+}
+
+void gameHandler(std::vector<Session>& sessions)
+{
+    while(true){
+        for(auto& sess : sessions){
+            if(!sess.isFree){
+                if(sess.gameStatus == GameStatus::OVER || sess.gameStatus == GameStatus::PENDING)
+                {
+                    // TODO somethig with invalid session
+                }
+                if(sess.first->isInGame() && sess.second->isInGame())
+                {
+                    
+                   //sess. = handleClientInput(sess.first, sess.second, sess.gameStatus);
+
+                }
+            }
+
+        }
+    }
+}
