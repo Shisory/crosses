@@ -10,7 +10,8 @@
                 "${file}",
                 "-o",
                 "${fileDirname}\\${fileBasenameNoExtension}.exe",
-                "-lws2_32"
+                "server.cpp",
+                "-lws2_32",
             ],
             "options": {
                 "cwd": "${fileDirname}"
