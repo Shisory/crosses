@@ -46,12 +46,6 @@ void Server::acceptClients()
             clients.push_back(client);
             std::cout << "USER JOINED [" << &client << "]" << std::endl;
             std::cout << "CLIENTS->BACK [" << &clients.back() << "]" << std::endl;
-            std::cout << "CLIENTS->BACK 222[" << &clients.back() << "]" << std::endl;
-
-            // clientThreads.emplace_back([this, &client] {
-            //     handleClient(&client); //TODO: CHECK HOW IT WORKS (zalupka)
-            // });
-            // clientThreads.back().join();
             std::thread t(&Server::handleClient, this, &this->clients.back());
             t.join();
         }   
