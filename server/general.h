@@ -10,9 +10,17 @@
 #include <ctime>
 //#include "commands.h"
 #include <memory>
-#include <WinSock2.h>
-#pragma comment(lib, "ws2_32.lib") // Link the Winsock library
-#include <windows.h>
+
+#ifdef _WIN32
+    #include <WinSock2.h>
+    #pragma comment(lib, "ws2_32.lib") // Link the Winsock library
+    #include <windows.h>
+#else
+    #include <arpa/inet.h>
+    #include <unistd.h>
+    #include <pthread.h>
+#endif
+
 
 
 // enum GameStatus

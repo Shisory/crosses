@@ -7,22 +7,30 @@ class Server
 public:
 // ---------------------- DATA --------------------
 
+#ifdef _WIN32
     WSADATA wsaData;
     SOCKADDR_IN addr;
-    int sizeofaddr = sizeof(addr);
     SOCKET sock;
+#else
+    int sock;
+    struct sockaddr_in addr;
+#endif
+    int sizeofaddr = sizeof(addr);
     std::mutex clientsMutex;
     std::mutex sessionsMutex;
 
 // ----------------------- VECTORS ---------------
 
     std::vector<std::thread> clientThreads;
-    std::vector<Client> clients; 
-    // std::vector<Session> sessions;   
+    std::vector<Client> clients;
+    // std::vector<Session> sessions;
 
 // ----------------------- METHODS ----------------
 
-    bool initWSA(); 
+#ifdef _WIN32
+    bool initWSA();
+#endif
+
     bool initSocket(char* ip, int port);
     void acceptClients();
     bool start(char* ip, int port);
