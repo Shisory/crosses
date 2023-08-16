@@ -113,7 +113,7 @@ void Server::handleClient(Client* client)
     const char* msg = "msg from server";
     while (true)
     {
-        std::cout << "\n ---------------------------- \nClient [" << client << "] is in his own thread\n ---------------------------- \n" << std::endl;
+        //std::cout << "\n ---------------------------- \nClient [" << client << "] is in his own thread\n ---------------------------- \n" << std::endl;
 #ifdef _WIN32
         send(client->sock, msg, strlen(msg), 0);
 #else
@@ -131,14 +131,14 @@ void Server::handleClient(Client* client)
 
 Session* Server::getOrCreateSession(std::vector<Session>& sessions)
 {
-    //std::lock_guard lock(sessionsMutex);
     for(auto& sess : sessions)
     {
-        if(sess.isFree){
+        if(sess.isJoinable()){
             Sleep(1000);
-            std::cout << "************************ \nReturned already existing session. ID: " << sessions.back().id << std::endl;
-            std::cout << "session first user: " << sessions.back().first << 
-                        "\nsession second user: " << sessions.back().second << "\n ************************ \n" << std::endl;
+
+            std::cout << "************************ \nReturned already existing session. ID: " << sess.id << ". Status: " << sess.isJoinable() << std::endl;
+            std::cout << "\tsession first user: " << sess.first << 
+                        "\n\tsession second user: " << sess.second << "\n ************************ \n" << std::endl;
 
             return &sess;
         }
@@ -167,70 +167,7 @@ void Server::matchmakingThread()
             if(client.status == Client::WAITING)
                 session->assignClient(&client);
         }
+        session->recheckJoinStatus();
 
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// void Server::joinUser(std::vector<Client>& clients, Session* session)
-// {
-//     std::lock_guard<std::mutex> lock(sessionsMutex);
-//     if(clients.size())
-//     {
-//         for(Client& usr : clients)
-//         {
-//             //std::lock_guard<std::mutex> connectionsLock(conMtx);
-//             std::cout << "Current user: " << &usr << "   Current session: " << session->id << " | " << " first: " << session->first << " | second: " << session->second << std::endl;
-//             if(usr.status == Client::WAITING) 
-//             {
-//                 if(session->first->status == Client::BLANK)
-//                 {
-//                     session->first = &usr;
-//                     session->first->status = Client::MATCHED;
-//                     std::cout << "matching first user into session" << " first: " << session->first << " | second: " << session->second << std::endl;
-//                     break;
-//                 } 
-//                 else if(session->second->status == Client::BLANK)
-//                 {
-//                     session->second = &usr;
-//                     session->second->status = Client::MATCHED;
-//                     std::cout << "matching second user into session" << " first: " << session->first << " | second: " << session->second << std::endl;
-//                     std::cout << "BREAKING NEWS: first status: " << session->first->status << " second status: " << session->second->status << std::endl;
-//                     break;
-                    
-//                 } else {
-//                     std::cout << "STRANGE POINTER OPERATION DETECTED" << std::endl;
-//                     break;
-//                 }
-//             }
-            
-//         }
-
-//     }
-// }

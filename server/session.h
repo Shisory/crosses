@@ -11,7 +11,7 @@ public:
     Client* second = nullptr;
     std::map<std::string, std::string> gameMap;
     std::map<std::string, int (Session::*)(char*)> commands;
-    bool isFree;
+    bool isFree = true;
     int id;
     int gameStatus = PENDING;
 
@@ -20,9 +20,10 @@ public:
     Session(int id, bool isFree);
     int fill(char* command);
     int exit(char* command);
-    void matchmake(int status);
-    void setJoinStatus();
+    bool isJoinable();
+    void recheckJoinStatus();
     void assignClient(Client* client);
+    void startGame();
 
 // ------------------ ENUM ------------------
     enum GameStatus

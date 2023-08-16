@@ -3,7 +3,7 @@
 Session::Session(int id, bool isFree)
 {
     this->id = id;
-    this->isFree = isFree;
+    //this->isFree = isFree;
     gameMap.insert(GAME_MAP.begin(), GAME_MAP.end());
     this->commands["1"] = &Session::fill;
     this->commands["2"] = &Session::fill;
@@ -35,24 +35,6 @@ int Session::exit(char* command)
     std::cout << "Client triggered exit" << std::endl;
 }
 
-void Session::matchmake(int status)
-{
-    this->first->setStatus(status);
-    this->second->setStatus(status);    
-};
-
-void Session::setJoinStatus()
-{
-    if(this->first->status == Client::ClientStatus::BLANK || this->second->status == Client::ClientStatus::BLANK)
-    {
-        this->isFree = true;
-    } 
-    else
-    {
-        this->isFree = false;
-        this->gameStatus = GameStatus::STARTED; 
-    }
-}
 
 
 void Session::assignClient(Client* client)
@@ -71,4 +53,18 @@ void Session::assignClient(Client* client)
         std::cout << "Assigning client into second session slot" << std::endl;
     }
     else std::cout << "Trying to assign client to a full session" << std::endl;
+}
+
+bool Session::isJoinable(){
+    return this->isFree;
+}
+
+void Session::recheckJoinStatus()
+{
+    if(this->first && this->second)
+    {
+        this->isFree = false;
+        this->gameStatus = STARTED;
+        std::cout << "Session is full. Starting a game....." << std::endl;
+    }
 }
