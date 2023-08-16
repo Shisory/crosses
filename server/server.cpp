@@ -71,16 +71,19 @@ void Server::acceptClients()
         SOCKET socket = accept(this->sock, (SOCKADDR*)&this->addr, &this->sizeofaddr);
         #else
         socklen_t sizeofaddr = sizeof(this->addr);
-        int clientSocket = accept(this->sock, (struct sockaddr*)&this->addr, &sizeofaddr);
+        int socket = accept(this->sock, (struct sockaddr*)&this->addr, &sizeofaddr);
         #endif
         {
             std::string ip = inet_ntoa(this->addr.sin_addr);
-            Client client = Client(clientSocket, ip);
+            Client client = Client(socket, ip);
+            std::lock_guard clientsLock(clientsMutex);
             clients.push_back(client);
             std::cout << "USER JOINED [" << &client << "]" << std::endl;
+            std::cout << "Client address from vector: [" << &clients.back() << "]" << std::endl;
 
-            std::thread t(&Server::handleClient, this, &clients.back());
-            t.detach();
+            clientThreads.emplace_back(&Server::handleClient, this, &clients.back());
+            //std::thread t(&Server::handleClient, this, &clients.back());
+            
         }
     }
 }
@@ -96,16 +99,21 @@ bool Server::start(char* ip, int port)
 #endif
 
     this->initSocket(ip, port);
-    this->acceptClients();
+    std::thread clientAcceptor(&Server::acceptClients, this);
+    std::thread matchmaker(&Server::matchmakingThread, this);
+    clientAcceptor.join();
+    
+    matchmaker.join();
+    //this->acceptClients();
     return true;
 }
 
 void Server::handleClient(Client* client)
 {
-    const char* msg = "HUY PIZDA";
+    const char* msg = "msg from server";
     while (true)
     {
-        std::cout << "Client [" << client << "] is in his own thread" << std::endl;
+        std::cout << "\n ---------------------------- \nClient [" << client << "] is in his own thread\n ---------------------------- \n" << std::endl;
 #ifdef _WIN32
         send(client->sock, msg, strlen(msg), 0);
 #else
@@ -118,3 +126,111 @@ void Server::handleClient(Client* client)
 #endif
     }
 }
+
+
+
+Session* Server::getOrCreateSession(std::vector<Session>& sessions)
+{
+    //std::lock_guard lock(sessionsMutex);
+    for(auto& sess : sessions)
+    {
+        if(sess.isFree){
+            Sleep(1000);
+            std::cout << "************************ \nReturned already existing session. ID: " << sessions.back().id << std::endl;
+            std::cout << "session first user: " << sessions.back().first << 
+                        "\nsession second user: " << sessions.back().second << "\n ************************ \n" << std::endl;
+
+            return &sess;
+        }
+    }
+    std::srand(std::time(0));
+    sessions.emplace_back(Session(std::rand(), true));
+    std::cout << "Created new session. ID: " << sessions.back().id << std::endl;
+    return &sessions.back();
+}
+
+
+
+void Server::matchmakingThread()
+{
+    while(true)
+    {
+        Sleep(1000);
+        std::lock_guard<std::mutex> sessionLock(sessionsMutex);
+        std::lock_guard<std::mutex> clientLock(clientsMutex);
+
+        std::cout << "inside matchmaker thread" << std::endl;
+        Session* session = getOrCreateSession(this->sessions);
+
+        for(Client& client : this->clients)
+        {
+            if(client.status == Client::WAITING)
+                session->assignClient(&client);
+        }
+
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// void Server::joinUser(std::vector<Client>& clients, Session* session)
+// {
+//     std::lock_guard<std::mutex> lock(sessionsMutex);
+//     if(clients.size())
+//     {
+//         for(Client& usr : clients)
+//         {
+//             //std::lock_guard<std::mutex> connectionsLock(conMtx);
+//             std::cout << "Current user: " << &usr << "   Current session: " << session->id << " | " << " first: " << session->first << " | second: " << session->second << std::endl;
+//             if(usr.status == Client::WAITING) 
+//             {
+//                 if(session->first->status == Client::BLANK)
+//                 {
+//                     session->first = &usr;
+//                     session->first->status = Client::MATCHED;
+//                     std::cout << "matching first user into session" << " first: " << session->first << " | second: " << session->second << std::endl;
+//                     break;
+//                 } 
+//                 else if(session->second->status == Client::BLANK)
+//                 {
+//                     session->second = &usr;
+//                     session->second->status = Client::MATCHED;
+//                     std::cout << "matching second user into session" << " first: " << session->first << " | second: " << session->second << std::endl;
+//                     std::cout << "BREAKING NEWS: first status: " << session->first->status << " second status: " << session->second->status << std::endl;
+//                     break;
+                    
+//                 } else {
+//                     std::cout << "STRANGE POINTER OPERATION DETECTED" << std::endl;
+//                     break;
+//                 }
+//             }
+            
+//         }
+
+//     }
+// }

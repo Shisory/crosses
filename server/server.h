@@ -1,6 +1,6 @@
 #include "general.h"
 #include "client.h"
-//#include "session.h"
+#include "session.h"
 
 class Server
 {
@@ -23,7 +23,7 @@ public:
 
     std::vector<std::thread> clientThreads;
     std::vector<Client> clients;
-    // std::vector<Session> sessions;
+    std::vector<Session> sessions;
 
 // ----------------------- METHODS ----------------
 
@@ -32,7 +32,13 @@ public:
 #endif
 
     bool initSocket(char* ip, int port);
-    void acceptClients();
     bool start(char* ip, int port);
+
+    void acceptClients();
     void handleClient(Client* client);
+    void joinUser(std::vector<Client>& clients, Session* sessions);
+    void matchmakingThread();
+
+    Session* getOrCreateSession(std::vector<Session>& sessions);
+
 };

@@ -16,8 +16,8 @@ Session::Session(int id, bool isFree)
     this->commands["9"] = &Session::fill;
     this->commands["exit"] = &Session::exit;
     this->commands["surrender"] = &Session::exit;
-    this->first = new Client();
-    this->second = new Client();
+    //this->first = new Client();
+    //this->second = new Client();
 };
 
 
@@ -43,7 +43,7 @@ void Session::matchmake(int status)
 
 void Session::setJoinStatus()
 {
-    if(this->first->status == ClientStatus::BLANK || this->second->status == ClientStatus::BLANK)
+    if(this->first->status == Client::ClientStatus::BLANK || this->second->status == Client::ClientStatus::BLANK)
     {
         this->isFree = true;
     } 
@@ -54,3 +54,21 @@ void Session::setJoinStatus()
     }
 }
 
+
+void Session::assignClient(Client* client)
+{
+    std::cout << "Session id: " << this->id << std::endl;
+    if(!this->first)
+    {
+        this->first = client;
+        client->status = Client::MATCHED;
+        std::cout << "Assigning client into first session slot" << std::endl;
+    }
+    else if(!this->second)
+    {
+        this->second = client;
+        client->status = Client::MATCHED;
+        std::cout << "Assigning client into second session slot" << std::endl;
+    }
+    else std::cout << "Trying to assign client to a full session" << std::endl;
+}
