@@ -68,7 +68,9 @@ void Server::acceptClients()
     while (true)
     {
         #ifdef _WIN32
-        SOCKET socket = accept(this->sock, (SOCKADDR*)&this->addr, &this->sizeofaddr);
+        SOCKADDR_IN clientAddr;
+        int clientAddrSize = sizeof(clientAddr);
+        SOCKET socket = accept(this->sock, (SOCKADDR*)&clientAddr, &clientAddrSize);
         #else
         socklen_t sizeofaddr = sizeof(this->addr);
         int socket = accept(this->sock, (struct sockaddr*)&this->addr, &sizeofaddr);
@@ -82,8 +84,6 @@ void Server::acceptClients()
             std::cout << "Client address from vector: [" << &clients.back() << "]" << std::endl;
 
             clientThreads.emplace_back(&Server::handleClient, this, &clients.back());
-            //std::thread t(&Server::handleClient, this, &clients.back());
-            
         }
     }
 }
@@ -99,6 +99,7 @@ bool Server::start(char* ip, int port)
 #endif
 
     this->initSocket(ip, port);
+    this->clients.reserve(10);
 
     // --------------  STARTING THREADS FOR MANAGING CLIENTS AND ACTIVE GAMES -------------------------
 
@@ -141,16 +142,16 @@ Session* Server::getOrCreateSession(std::vector<Session>& sessions)
         if(sess.isJoinable()){
             Sleep(1000);
 
-            std::cout << "\n************************ \nReturned already existing session. ID: " << sess.id << ". Status: " << sess.isJoinable() << std::endl;
-            std::cout << "\tsession first user: " << sess.first << 
-                        "\n\tsession second user: " << sess.second << "\n\n ************************ \n" << std::endl;
+            // std::cout << "\n************************ \nReturned already existing session. ID: " << sess.id << ". Status: " << sess.isJoinable() << std::endl;
+            // std::cout << "\tsession first user: " << sess.first << 
+            //             "\n\tsession second user: " << sess.second << "\n\n ************************ \n" << std::endl;
 
             return &sess;
         }
     }
     std::srand(std::time(0));
     sessions.emplace_back(Session(std::rand(), true));
-    std::cout << "Created new session. ID: " << sessions.back().id << std::endl;
+    //std::cout << "Created new session. ID: " << sessions.back().id << std::endl;
     return &sessions.back();
 }
 
@@ -209,39 +210,39 @@ void Server::handleGame(std::vector<Session>& sessions)
             {
                 if(!session.isJoinable())
                 {
-                    std::cout << "\n ------------------- \nInside active session. Session id: " << session.id << " session status: " << session.gameStatus 
-                    << "\nAddress of first: " << session.first << "\nAddress of second: " << session.second 
-                    << "\n ------------------- \n" << std::endl;  
+                    // std::cout << "\n ------------------- \nInside active session. Session id: " << session.id << " session status: " << session.gameStatus 
+                    // << "\nAddress of first: " << session.first << "\nAddress of second: " << session.second 
+                    // << "\n ------------------- \n" << std::endl;  
 
                     if(session.gameStatus == Session::CLIENT_1_MOVE)
                     {
                         // telling each client what to do
-                        std::cout << "Client 1 turn to make move" << std::endl;
+                        std::cout << "\nClient 1 turn to make move" << std::endl;
                         send(session.first->sock, this->moveCode, strlen(this->moveCode), 0);
                         send(session.second->sock, this->waitCode, strlen(this->waitCode), 0);
 
-                        Sleep(50000);
                         recv(session.first->sock, session.sessionBuffer, sizeof(session.sessionBuffer), 0);
-                        std::cout << "Client 1 made move - " << session.sessionBuffer << std::endl;
-                        session.setGameStatus(Session::CLIENT_2_MOVE);
-                        std::cout << "Setting client 2 turn to move" << std::endl;
+                        std::cout << "\nClient 1 made move - " << session.sessionBuffer;
+                        
+                        
                         memset(session.sessionBuffer, 0, sizeof(session.sessionBuffer));
-                        std::cout << "Zeroing session buffer" << std::endl;
-                        //break;
+                        std::cout << "\nSetting client 2 turn to move";
+                        session.setGameStatus(Session::CLIENT_2_MOVE);
+                        break;
                             
 
                     } else if(session.gameStatus == Session::CLIENT_2_MOVE)
                     {
-                        std::cout << "Client 2 turn to make move" << std::endl;
+                        std::cout << "\nClient 2 turn to make move";
                         send(session.first->sock, this->waitCode, strlen(this->waitCode), 0);
                         send(session.second->sock, this->moveCode, strlen(this->moveCode), 0);
                         
                         recv(session.second->sock, session.sessionBuffer, sizeof(session.sessionBuffer), 0);
-                        std::cout << "Client 2 made move - " << session.sessionBuffer << std::endl;
-                        std::cout << "Setting client 1 turn to move" << std::endl;
+                        std::cout << "\nClient 2 made move - " << session.sessionBuffer;
+                        std::cout << "\nSetting client 1 turn to move";
                         session.setGameStatus(Session::CLIENT_1_MOVE);
                         memset(session.sessionBuffer, 0, sizeof(session.sessionBuffer));
-                        //break;
+                        break;
                     }
                     else std::cout << "Weird session gamestatus encountered" << std::endl;
                 }

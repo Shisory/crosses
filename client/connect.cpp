@@ -17,7 +17,7 @@ int main(){
     };
 
     SOCKADDR_IN addr;
-     addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+     addr.sin_addr.s_addr = inet_addr("127.2.0.1");
      addr.sin_family = AF_INET;
      addr.sin_port = htons(1111);
 
@@ -38,7 +38,7 @@ int main(){
         recv(connectionSocket, rcvBuff, sizeof(rcvBuff), 0);
         if(strcmp(rcvBuff, "move") == 0)
         {
-            std::cout << "It's your move:" << std::endl;
+            std::cout << "\nIt's your move:";
             std::cin >> sendBuff;
             
             send(connectionSocket, sendBuff, sizeof(sendBuff), 0);
@@ -48,18 +48,14 @@ int main(){
         else
         if(strcmp(rcvBuff, "wait") == 0)
         {
-            std::cout << "Waiting for opponent's move" << std::endl;
-            std::cin >> sendBuff;
+            std::cout << "\nWaiting for opponent's move";
             
-            send(connectionSocket, sendBuff, sizeof(sendBuff), 0);
             memset(rcvBuff, 0, sizeof(sendBuff));
-            memset(sendBuff, 0, sizeof(rcvBuff));
 
         }
         else std::cout << "processing..." << std::endl;
-
-        Sleep(2000);
-        
+        memset(rcvBuff, 0, sizeof(sendBuff));
+        memset(sendBuff, 0, sizeof(rcvBuff));
     }
 
 
