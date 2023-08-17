@@ -14,6 +14,7 @@ public:
     bool isFree = true;
     int id;
     int gameStatus = PENDING;
+    char sessionBuffer[512];
 
 // ---------------- METHODS ---------------
 
@@ -23,7 +24,7 @@ public:
     bool isJoinable();
     void recheckJoinStatus();
     void assignClient(Client* client);
-    void startGame();
+    void setGameStatus(int status);
 
 // ------------------ ENUM ------------------
     enum GameStatus

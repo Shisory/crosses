@@ -16,8 +16,6 @@ Session::Session(int id, bool isFree)
     this->commands["9"] = &Session::fill;
     this->commands["exit"] = &Session::exit;
     this->commands["surrender"] = &Session::exit;
-    //this->first = new Client();
-    //this->second = new Client();
 };
 
 
@@ -67,4 +65,9 @@ void Session::recheckJoinStatus()
         this->gameStatus = STARTED;
         std::cout << "Session is full. Starting a game....." << std::endl;
     }
+}
+
+void Session::setGameStatus(int status)
+{
+    this->gameStatus = status;
 }

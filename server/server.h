@@ -19,6 +19,9 @@ public:
     std::mutex clientsMutex;
     std::mutex sessionsMutex;
 
+    const char* moveCode = "move";
+    const char* waitCode = "wait";
+
 // ----------------------- VECTORS ---------------
 
     std::vector<std::thread> clientThreads;
@@ -38,6 +41,9 @@ public:
     void handleClient(Client* client);
     void joinUser(std::vector<Client>& clients, Session* sessions);
     void matchmakingThread();
+    void startGame(Session* session);
+    void handleGame(std::vector<Session>& sessions);
+    
 
     Session* getOrCreateSession(std::vector<Session>& sessions);
 
