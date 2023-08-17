@@ -220,12 +220,14 @@ void Server::handleGame(std::vector<Session>& sessions)
                         send(session.first->sock, this->moveCode, strlen(this->moveCode), 0);
                         send(session.second->sock, this->waitCode, strlen(this->waitCode), 0);
 
-                        recv(session.first->sock, session.sessionBuffer, strlen(session.sessionBuffer), 0);
-
-                        std::cout << "Setting client 2 turn to move" << std::endl;
+                        Sleep(50000);
+                        recv(session.first->sock, session.sessionBuffer, sizeof(session.sessionBuffer), 0);
+                        std::cout << "Client 1 made move - " << session.sessionBuffer << std::endl;
                         session.setGameStatus(Session::CLIENT_2_MOVE);
+                        std::cout << "Setting client 2 turn to move" << std::endl;
                         memset(session.sessionBuffer, 0, sizeof(session.sessionBuffer));
-                        break;
+                        std::cout << "Zeroing session buffer" << std::endl;
+                        //break;
                             
 
                     } else if(session.gameStatus == Session::CLIENT_2_MOVE)
@@ -233,14 +235,15 @@ void Server::handleGame(std::vector<Session>& sessions)
                         std::cout << "Client 2 turn to make move" << std::endl;
                         send(session.first->sock, this->waitCode, strlen(this->waitCode), 0);
                         send(session.second->sock, this->moveCode, strlen(this->moveCode), 0);
-
-                        recv(session.second->sock, session.sessionBuffer, strlen(session.sessionBuffer), 0);
-
+                        
+                        recv(session.second->sock, session.sessionBuffer, sizeof(session.sessionBuffer), 0);
+                        std::cout << "Client 2 made move - " << session.sessionBuffer << std::endl;
                         std::cout << "Setting client 1 turn to move" << std::endl;
                         session.setGameStatus(Session::CLIENT_1_MOVE);
                         memset(session.sessionBuffer, 0, sizeof(session.sessionBuffer));
-                        break;
+                        //break;
                     }
+                    else std::cout << "Weird session gamestatus encountered" << std::endl;
                 }
             }
         }

@@ -11,6 +11,8 @@
                 "-o",
                 "${fileDirname}\\${fileBasenameNoExtension}.exe",
                 "server.cpp",
+                "client.cpp",
+                "session.cpp",
                 "-lws2_32",
             ],
             "options": {
