@@ -74,23 +74,51 @@ void Session::setGameStatus(int status)
 
 // Player 1 always puts 'X', player 2 always puts 'O' in a map cell
 
-bool Session::validateMove(char* move)
+bool Session::validateMove(char* move, const char playerCode)
 {
     if (this->gameMap.find(move) != this->gameMap.end()) 
     {
-        // if(this->gameMap[move] == '*')
-        // {
-        //     this->gameMap[move] = 
-        // }
-
-        std::cout << "this key is present in map";
-        return true;
+        
+        if(strcmp(gameMap[move].c_str(), "*") == 0)
+        {
+            this->gameMap[move] = playerCode;
+            std::cout << "\nPut player code " << playerCode << "in cell " << move << std::endl;
+            return true;
+        }
+        else if(strcmp(gameMap[move].c_str(), "X") == 0 || strcmp(gameMap[move].c_str(), "O") == 0)
+        {
+            std::cout << "This cell is already taken" << std::endl;
+            return false;
+        }
+        else return false;
     } 
     else 
     {
         std::cout << "this key is not present in map\n";
         return false;
     }
-    
+}
+
+
+bool Session::checkWin(){
+    if( 
+        //  checking rows to be win combination
+        ((this->gameMap["1"] == this->gameMap["2"] && this->gameMap["3"] == this->gameMap["2"]) && (this->gameMap["1"] != "*")) ||
+        ((this->gameMap["4"] == this->gameMap["5"] && this->gameMap["6"] == this->gameMap["5"]) && (this->gameMap["4"] != "*")) ||
+        ((this->gameMap["7"] == this->gameMap["8"] && this->gameMap["9"] == this->gameMap["8"]) && (this->gameMap["7"] != "*")) ||
+        // checking columns to be win combination
+        ((this->gameMap["1"] == this->gameMap["4"] && this->gameMap["7"] == this->gameMap["4"]) && (this->gameMap["1"] != "*")) ||
+        ((this->gameMap["2"] == this->gameMap["5"] && this->gameMap["8"] == this->gameMap["5"]) && (this->gameMap["2"] != "*")) ||
+        ((this->gameMap["3"] == this->gameMap["6"] && this->gameMap["9"] == this->gameMap["6"]) && (this->gameMap["3"] != "*")) ||
+        // checking diagonals
+        ((this->gameMap["1"] == this->gameMap["5"] && this->gameMap["9"] == this->gameMap["5"]) && (this->gameMap["1"] != "*")) || 
+        ((this->gameMap["3"] == this->gameMap["5"] && this->gameMap["7"] == this->gameMap["5"]) && (this->gameMap["3"] != "*")) )
+    {
+        
+        this->setGameStatus(Session::OVER);
+        return true;
+    } 
+    else return false;
+
 
 }

@@ -225,7 +225,7 @@ void Server::handleGame(std::vector<Session>& sessions)
                         {
                             recv(session.first->sock, session.sessionBuffer, sizeof(session.sessionBuffer), 0);
 
-                            if(session.validateMove(session.sessionBuffer))
+                            if(session.validateMove(session.sessionBuffer, session.player1))
                             {
                                 std::cout << "\nClient 1 made move - " << session.sessionBuffer;
                                 std::cout << "\nSetting client 2 turn to move";
@@ -237,6 +237,7 @@ void Server::handleGame(std::vector<Session>& sessions)
                             std::cout << "client made incorrect move" << std::endl;
                             memset(session.sessionBuffer, 0, sizeof(session.sessionBuffer));
                         }
+                        if(session.checkWin()) std::cout << "\nplayer 1 won the game\n";
                     } 
                     else 
                     if(session.gameStatus == Session::CLIENT_2_MOVE)
@@ -249,7 +250,7 @@ void Server::handleGame(std::vector<Session>& sessions)
                         {
                             recv(session.second->sock, session.sessionBuffer, sizeof(session.sessionBuffer), 0);
 
-                            if(session.validateMove(session.sessionBuffer))
+                            if(session.validateMove(session.sessionBuffer, session.player2))
                             {
                                 std::cout << "\nClient 2 made move - " << session.sessionBuffer;
                                 std::cout << "\nSetting client 1 turn to move";
@@ -260,7 +261,14 @@ void Server::handleGame(std::vector<Session>& sessions)
                             send(session.second->sock, this->moveCode, strlen(this->moveCode), 0);
                             std::cout << "client made incorrect move" << std::endl;
                             memset(session.sessionBuffer, 0, sizeof(session.sessionBuffer));
+                            
                         }
+                        if(session.checkWin()) std::cout << "\nplayer 2 won the game\n";
+                    }
+                    else
+                    if(session.gameStatus == Session::OVER)
+                    {
+                        std::cout << "\nMATCH IS OVER\n";
                     }
                     else std::cout << "Weird session gamestatus encountered" << std::endl;
                 }

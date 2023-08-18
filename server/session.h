@@ -27,7 +27,8 @@ public:
     void recheckJoinStatus();
     void assignClient(Client* client);
     void setGameStatus(int status);
-    bool validateMove(char * move);
+    bool validateMove(char * move,  const char playerCode);
+    bool checkWin();
 
 // ------------------ ENUM ------------------
     enum GameStatus
