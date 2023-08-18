@@ -269,6 +269,14 @@ void Server::handleGame(std::vector<Session>& sessions)
                     if(session.gameStatus == Session::OVER)
                     {
                         std::cout << "\nMATCH IS OVER\n";
+                        send(session.first->sock, this->overCode, strlen(this->overCode), 0);
+                        send(session.second->sock, this->overCode, strlen(this->overCode), 0);
+                        session.first->status = Client::WAITING;
+                        session.second->status = Client::WAITING;
+                        session.first = nullptr;
+                        session.second = nullptr;
+                        session.isFree = true;
+
                     }
                     else std::cout << "Weird session gamestatus encountered" << std::endl;
                 }

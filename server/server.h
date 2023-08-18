@@ -21,6 +21,7 @@ public:
 
     const char* moveCode = "move";
     const char* waitCode = "wait";
+    const char* overCode = "over";
 
 // ----------------------- VECTORS ---------------
 

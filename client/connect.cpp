@@ -53,6 +53,11 @@ int main(){
             memset(rcvBuff, 0, sizeof(sendBuff));
 
         }
+        else 
+        if(strcmp(rcvBuff, "over"))
+        {
+            std::cout << "Waiting for session" << std::endl;
+        }
         else std::cout << "processing..." << std::endl;
         memset(rcvBuff, 0, sizeof(sendBuff));
         memset(sendBuff, 0, sizeof(rcvBuff));
