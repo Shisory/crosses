@@ -26,9 +26,8 @@ bool Client::isInGame()
     return this->status == GAME;
 }
 
-void Client::clearBuffer()
-{
-    memset(this->connectionBuffer, 0, sizeof(this->connectionBuffer));
+void Client::clearClientBuffer() {
+    memset(this->clientBuffer, 0, sizeof(this->clientBuffer));
 }
 
 void Client::clearGameBuffer()

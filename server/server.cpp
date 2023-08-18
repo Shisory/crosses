@@ -78,7 +78,7 @@ void Server::acceptClients()
         {
             std::string ip = inet_ntoa(this->addr.sin_addr);
             Client client = Client(socket, ip);
-            std::lock_guard clientsLock(clientsMutex);
+            std::lock_guard<std::mutex> clientsLock(clientsMutex);
             clients.push_back(client);
             std::cout << "USER JOINED [" << &client << "]" << std::endl;
             std::cout << "Client address from vector: [" << &clients.back() << "]" << std::endl;
@@ -107,7 +107,7 @@ bool Server::start(char* ip, int port)
     std::thread matchmaker(&Server::matchmakingThread, this);
     std::thread gameHandler(&Server::handleGame, this, std::ref(this->sessions));
 
-    
+
     clientAcceptor.join();
     matchmaker.join();
     gameHandler.join();
@@ -140,7 +140,11 @@ Session* Server::getOrCreateSession(std::vector<Session>& sessions)
     for(auto& sess : sessions)
     {
         if(sess.isJoinable()){
-            Sleep(1000);
+            #ifdef _WIN32
+                    Sleep(2000);
+            #else
+                    usleep(2000000);
+            #endif
 
             // std::cout << "\n************************ \nReturned already existing session. ID: " << sess.id << ". Status: " << sess.isJoinable() << std::endl;
             // std::cout << "\tsession first user: " << sess.first << 
@@ -155,13 +159,15 @@ Session* Server::getOrCreateSession(std::vector<Session>& sessions)
     return &sessions.back();
 }
 
-
-
 void Server::matchmakingThread()
 {
     while(true)
     {
-        Sleep(1000);
+        #ifdef _WIN32
+                Sleep(2000);
+        #else
+                usleep(2000000);
+        #endif
         std::lock_guard<std::mutex> sessionLock(sessionsMutex);
         std::lock_guard<std::mutex> clientLock(clientsMutex);
 
@@ -178,9 +184,9 @@ void Server::matchmakingThread()
 
                 break;
             }
-                
+
         }
-        
+
     }
 }
 
@@ -190,17 +196,22 @@ void Server::startGame(Session* session)
     // setting client statuses to "In game"
     session->first->setStatus(Client::GAME);
     session->second->setStatus(Client::GAME);
-
     // setting first joined client to move first
     session->gameStatus = Session::CLIENT_1_MOVE;
 
+    strcpy(session->first->gameBuffer, Server::moveCode);
+    strcpy(session->second->gameBuffer, Server::waitCode);
 }
 
 void Server::handleGame(std::vector<Session>& sessions)
 {
     while(true)
     {
-        Sleep(2000);
+        #ifdef _WIN32
+                Sleep(2000);
+        #else
+                usleep(2000000);
+        #endif
         if(sessions.size())
         {
             std::lock_guard<std::mutex> sessionLock(sessionsMutex);
@@ -212,75 +223,67 @@ void Server::handleGame(std::vector<Session>& sessions)
                 {
                     // std::cout << "\n ------------------- \nInside active session. Session id: " << session.id << " session status: " << session.gameStatus 
                     // << "\nAddress of first: " << session.first << "\nAddress of second: " << session.second 
-                    // << "\n ------------------- \n" << std::endl;  
+                    // << "\n ------------------- \n" << std::endl;
 
                     if(session.gameStatus == Session::CLIENT_1_MOVE)
                     {
                         // telling each client what to do
                         std::cout << "\nClient 1 turn to make move" << std::endl;
-                        send(session.first->sock, this->moveCode, strlen(this->moveCode), 0);
-                        send(session.second->sock, this->waitCode, strlen(this->waitCode), 0);
-
-                        while(true)
+                        if(session.first->isClientBufferFull)
                         {
-                            recv(session.first->sock, session.sessionBuffer, sizeof(session.sessionBuffer), 0);
-
-                            if(session.validateMove(session.sessionBuffer, session.player1))
+                            if(session.validateMove(session.first->clientBuffer, session.player1))
                             {
-                                std::cout << "\nClient 1 made move - " << session.sessionBuffer;
-                                std::cout << "\nSetting client 2 turn to move";
+                                strcpy(session.first->gameBuffer, Server::waitCode);
+                                strcpy(session.second->gameBuffer, Server::moveCode);
+
                                 session.setGameStatus(Session::CLIENT_2_MOVE);
-                                break;
+                                session.first->clearClientBuffer();
+                                continue;
                             }
-                            
-                            send(session.first->sock, this->moveCode, strlen(this->moveCode), 0);
-                            std::cout << "client made incorrect move" << std::endl;
-                            memset(session.sessionBuffer, 0, sizeof(session.sessionBuffer));
+                            else
+                            {
+                                strcpy(session.first->gameBuffer, Server::moveCode);
+                                continue;
+                            }
                         }
                         if(session.checkWin()) std::cout << "\nplayer 1 won the game\n";
-                    } 
-                    else 
-                    if(session.gameStatus == Session::CLIENT_2_MOVE)
+                    }
+                    else if (session.gameStatus == Session::CLIENT_2_MOVE)
                     {
-                        std::cout << "\nClient 2 turn to make move";
-                        send(session.first->sock, this->waitCode, strlen(this->waitCode), 0);
-                        send(session.second->sock, this->moveCode, strlen(this->moveCode), 0);
-                        
-                        while(true)
+                        // telling each client what to do
+                        std::cout << "\nClient 2 turn to make move" << std::endl;
+                        if(session.second->isClientBufferFull)
                         {
-                            recv(session.second->sock, session.sessionBuffer, sizeof(session.sessionBuffer), 0);
-
-                            if(session.validateMove(session.sessionBuffer, session.player2))
+                            if(session.validateMove(session.second->clientBuffer, session.player2))
                             {
-                                std::cout << "\nClient 2 made move - " << session.sessionBuffer;
-                                std::cout << "\nSetting client 1 turn to move";
+                                strcpy(session.second->gameBuffer, Server::waitCode);
+                                strcpy(session.first->gameBuffer, Server::moveCode);
+
                                 session.setGameStatus(Session::CLIENT_1_MOVE);
-                                break;
+                                session.second->clearClientBuffer();
+                                continue;
                             }
-                            
-                            send(session.second->sock, this->moveCode, strlen(this->moveCode), 0);
-                            std::cout << "client made incorrect move" << std::endl;
-                            memset(session.sessionBuffer, 0, sizeof(session.sessionBuffer));
-                            
                         }
                         if(session.checkWin()) std::cout << "\nplayer 2 won the game\n";
                     }
-                    else
-                    if(session.gameStatus == Session::OVER)
+                    else if(session.gameStatus == Session::OVER)
                     {
                         std::cout << "\nMATCH IS OVER\n";
                         send(session.first->sock, this->overCode, strlen(this->overCode), 0);
-                        send(session.second->sock, this->overCode, strlen(this->overCode), 0);
+                        send(session.second->sock, this->overCode, strlen(this->overCode), 0); // TODO move to client
+                        //--------------------------------------MOVE TO SEPARATE FUNCTION
                         session.first->status = Client::WAITING;
                         session.second->status = Client::WAITING;
+                        session.setGameStatus(Session::PENDING);
                         session.first = nullptr;
                         session.second = nullptr;
                         session.isFree = true;
+                        //--------------------------------------MOVE TO SEPARATE FUNCTION
 
                     }
                     else std::cout << "Weird session gamestatus encountered" << std::endl;
                 }
             }
         }
-    }   
+    }
 }
