@@ -71,3 +71,26 @@ void Session::setGameStatus(int status)
 {
     this->gameStatus = status;
 }
+
+// Player 1 always puts 'X', player 2 always puts 'O' in a map cell
+
+bool Session::validateMove(char* move)
+{
+    if (this->gameMap.find(move) != this->gameMap.end()) 
+    {
+        // if(this->gameMap[move] == '*')
+        // {
+        //     this->gameMap[move] = 
+        // }
+
+        std::cout << "this key is present in map";
+        return true;
+    } 
+    else 
+    {
+        std::cout << "this key is not present in map\n";
+        return false;
+    }
+    
+
+}

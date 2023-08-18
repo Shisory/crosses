@@ -221,28 +221,46 @@ void Server::handleGame(std::vector<Session>& sessions)
                         send(session.first->sock, this->moveCode, strlen(this->moveCode), 0);
                         send(session.second->sock, this->waitCode, strlen(this->waitCode), 0);
 
-                        recv(session.first->sock, session.sessionBuffer, sizeof(session.sessionBuffer), 0);
-                        std::cout << "\nClient 1 made move - " << session.sessionBuffer;
-                        
-                        
-                        memset(session.sessionBuffer, 0, sizeof(session.sessionBuffer));
-                        std::cout << "\nSetting client 2 turn to move";
-                        session.setGameStatus(Session::CLIENT_2_MOVE);
-                        break;
-                            
+                        while(true)
+                        {
+                            recv(session.first->sock, session.sessionBuffer, sizeof(session.sessionBuffer), 0);
 
-                    } else if(session.gameStatus == Session::CLIENT_2_MOVE)
+                            if(session.validateMove(session.sessionBuffer))
+                            {
+                                std::cout << "\nClient 1 made move - " << session.sessionBuffer;
+                                std::cout << "\nSetting client 2 turn to move";
+                                session.setGameStatus(Session::CLIENT_2_MOVE);
+                                break;
+                            }
+                            
+                            send(session.first->sock, this->moveCode, strlen(this->moveCode), 0);
+                            std::cout << "client made incorrect move" << std::endl;
+                            memset(session.sessionBuffer, 0, sizeof(session.sessionBuffer));
+                        }
+                    } 
+                    else 
+                    if(session.gameStatus == Session::CLIENT_2_MOVE)
                     {
                         std::cout << "\nClient 2 turn to make move";
                         send(session.first->sock, this->waitCode, strlen(this->waitCode), 0);
                         send(session.second->sock, this->moveCode, strlen(this->moveCode), 0);
                         
-                        recv(session.second->sock, session.sessionBuffer, sizeof(session.sessionBuffer), 0);
-                        std::cout << "\nClient 2 made move - " << session.sessionBuffer;
-                        std::cout << "\nSetting client 1 turn to move";
-                        session.setGameStatus(Session::CLIENT_1_MOVE);
-                        memset(session.sessionBuffer, 0, sizeof(session.sessionBuffer));
-                        break;
+                        while(true)
+                        {
+                            recv(session.second->sock, session.sessionBuffer, sizeof(session.sessionBuffer), 0);
+
+                            if(session.validateMove(session.sessionBuffer))
+                            {
+                                std::cout << "\nClient 2 made move - " << session.sessionBuffer;
+                                std::cout << "\nSetting client 1 turn to move";
+                                session.setGameStatus(Session::CLIENT_1_MOVE);
+                                break;
+                            }
+                            
+                            send(session.second->sock, this->moveCode, strlen(this->moveCode), 0);
+                            std::cout << "client made incorrect move" << std::endl;
+                            memset(session.sessionBuffer, 0, sizeof(session.sessionBuffer));
+                        }
                     }
                     else std::cout << "Weird session gamestatus encountered" << std::endl;
                 }

@@ -15,6 +15,8 @@ public:
     int id;
     int gameStatus = PENDING;
     char sessionBuffer[512];
+    const char player1 = 'X';
+    const char player2 = 'O';
 
 // ---------------- METHODS ---------------
 
@@ -25,6 +27,7 @@ public:
     void recheckJoinStatus();
     void assignClient(Client* client);
     void setGameStatus(int status);
+    bool validateMove(char * move);
 
 // ------------------ ENUM ------------------
     enum GameStatus
