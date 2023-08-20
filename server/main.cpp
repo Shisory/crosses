@@ -5,7 +5,7 @@
 int main()
 {
     Server server;
-    server.start("127.2.0.1", 1111);
+    server.start("127.0.0.1", 1111);
 
 
     for(auto& thread : server.clientThreads)

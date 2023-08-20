@@ -1,4 +1,6 @@
 #include "client.h"
+#include <unistd.h>
+
 
 Client::Client()
 {
@@ -33,4 +35,27 @@ void Client::clearClientBuffer() {
 void Client::clearGameBuffer()
 {
     memset(this->gameBuffer, 0, sizeof(this->gameBuffer));
+}
+
+void Client::receiveClientData()
+{
+    int bytesReceived = recv(this->sock, this->clientBuffer + this->totalBytesRecived, sizeof(this->clientBuffer) - this->totalBytesRecived, 0);
+    if(bytesReceived == -1)
+    {
+        std::cout << "ERROR HAPPEND WITH RECEIVING BYTES FOR CLIENT -> " << this << std::endl;
+    }
+    else if(bytesReceived == 0)
+    {
+        // do nothing
+    }
+    else
+    {
+        totalBytesRecived += bytesReceived;
+    }
+    if (this->totalBytesRecived == MESSAGE_SIZE)
+    {
+        this->totalBytesRecived = 0;
+        this->isClientBufferFull = true;
+    }
+    usleep(1000000 * 2);
 }

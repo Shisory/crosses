@@ -85,14 +85,10 @@ bool Session::validateMove(char* move, const char playerCode) // TODO rename to 
             std::cout << "\nPut player code " << playerCode << "in cell " << move << std::endl;
             return true;
         }
-//        else if(strcmp(gameMap[move].c_str(), "X") == 0 || strcmp(gameMap[move].c_str(), "O") == 0)
-//        {
-//            std::cout << "This cell is already taken" << std::endl;
-//            return false;
-//        }
         else
         {
             std::cout << "Field is taken" << std::endl; //TODO: SEND MESSAGE TO USER
+            return false;
         }
     } 
     else 

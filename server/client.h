@@ -1,6 +1,7 @@
 #pragma once
 #include "general.h"
 
+#define MESSAGE_SIZE 100
 class Client
 {
 public:
@@ -12,6 +13,8 @@ public:
     bool isClientBufferFull = false;
     char gameBuffer[100] = {0};
     bool isGameBufferFull = false;
+
+    int totalBytesRecived = 0;
 #ifdef _WIN32
     SOCKET sock;
 #else
@@ -34,6 +37,7 @@ public:
     void clearClientBuffer();
     void clearGameBuffer();
 
+    void receiveClientData();
 // ----------------- ENUM -------------------------
     enum ClientStatus
     {

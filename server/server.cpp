@@ -10,6 +10,7 @@
 #else
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <fcntl.h>
 #endif
 
 bool Server::initSocket(char* ip, int port)
@@ -50,12 +51,13 @@ bool Server::initSocket(char* ip, int port)
     if (listen(this->sock, 10) == -1)
     {
         std::cerr << "Error listening on socket" << std::endl;
-#ifdef _WIN32
-        closesocket(this->sock);
-        WSACleanup();
-#else
-        close(this->sock);
-#endif
+        std::cout << "ERROR LISTENING" << std::endl;
+        #ifdef _WIN32
+                closesocket(this->sock);
+                WSACleanup();
+        #else
+                close(this->sock);
+        #endif
         return false;
     }
 
@@ -74,7 +76,9 @@ void Server::acceptClients()
         #else
         socklen_t sizeofaddr = sizeof(this->addr);
         int socket = accept(this->sock, (struct sockaddr*)&this->addr, &sizeofaddr);
-        #endif
+        int flags = fcntl(socket, F_GETFL, 0);
+        fcntl(socket, F_SETFL, flags | O_NONBLOCK); // FCNTL
+#endif
         {
             std::string ip = inet_ntoa(this->addr.sin_addr);
             Client client = Client(socket, ip);
@@ -116,23 +120,24 @@ bool Server::start(char* ip, int port)
 
 void Server::handleClient(Client* client)
 {
-    const char* msg = "msg from server";
     while (true)
     {
-        //std::cout << "\n ---------------------------- \nClient [" << client << "] is in his own thread\n ---------------------------- \n" << std::endl;
-#ifdef _WIN32
-        //send(client->sock, msg, strlen(msg), 0);
-#else
-        send(client->sock, msg, strlen(msg), MSG_NOSIGNAL);
-#endif
-#ifdef _WIN32
-        Sleep(2000);
-#else
-        usleep(2000000);
-#endif
+        if(client->isInGame()) //TODO Add logic for lobby so the client could be not in a game
+        {
+            if(client->isGameBufferFull)
+            {
+                send(client->sock, client->gameBuffer, sizeof(client->gameBuffer)/sizeof(client->gameBuffer[0]), 0);
+                //TODO add try catch for multiple tries because message can be lost
+                client->clearGameBuffer();
+                client->isGameBufferFull = false;
+            }
+            if(!client->isClientBufferFull)
+            {
+                client->receiveClientData();
+            }
+        }
     }
 }
-
 
 
 Session* Server::getOrCreateSession(std::vector<Session>& sessions)
@@ -190,7 +195,6 @@ void Server::matchmakingThread()
     }
 }
 
-
 void Server::startGame(Session* session)
 {
     // setting client statuses to "In game"
@@ -201,6 +205,9 @@ void Server::startGame(Session* session)
 
     strcpy(session->first->gameBuffer, Server::moveCode);
     strcpy(session->second->gameBuffer, Server::waitCode);
+
+    session->first->isGameBufferFull = true;
+    session->second->isGameBufferFull = true;
 }
 
 void Server::handleGame(std::vector<Session>& sessions)
@@ -235,14 +242,19 @@ void Server::handleGame(std::vector<Session>& sessions)
                             {
                                 strcpy(session.first->gameBuffer, Server::waitCode);
                                 strcpy(session.second->gameBuffer, Server::moveCode);
-
                                 session.setGameStatus(Session::CLIENT_2_MOVE);
+
+                                // set game buffer flag
+                                session.first->isGameBufferFull = true;
+                                session.second->isGameBufferFull = true;
+
                                 session.first->clearClientBuffer();
                                 continue;
                             }
                             else
                             {
                                 strcpy(session.first->gameBuffer, Server::moveCode);
+                                session.first->isGameBufferFull = true;
                                 continue;
                             }
                         }
@@ -260,7 +272,16 @@ void Server::handleGame(std::vector<Session>& sessions)
                                 strcpy(session.first->gameBuffer, Server::moveCode);
 
                                 session.setGameStatus(Session::CLIENT_1_MOVE);
+                                // set game buffer flag
+                                session.first->isGameBufferFull = true;
+                                session.second->isGameBufferFull = true;
                                 session.second->clearClientBuffer();
+                                continue;
+                            }
+                            else
+                            {
+                                strcpy(session.second->gameBuffer, Server::moveCode);
+                                session.second->isGameBufferFull = true;
                                 continue;
                             }
                         }
